@@ -1402,6 +1402,49 @@ test.group('Base Model | persist', (group) => {
     assert.lengthOf(users, 1)
     assert.equal(users[0].id.toLowerCase(), newUuid)
   })
+
+  test('use custom name for the local primary key', async ({ fs, assert }) => {
+    const app = new AppFactory().create(fs.baseUrl, () => {})
+    await app.init()
+    const db = await getDb()
+    const adapter = ormAdapter(db)
+
+    const BaseModel = getBaseModel(adapter)
+
+    class User extends BaseModel {
+      static table = 'uuid_users'
+      static selfAssignPrimaryKey = true
+
+      @column({ isPrimary: true, columnName: 'id' })
+      declare userId: string
+
+      @column()
+      declare username: string
+
+      @column()
+      declare createdAt: string
+
+      @column({ columnName: 'updated_at' })
+      declare updatedAt: string
+    }
+
+    User.boot()
+
+    const uuid = '2da96a33-57a0-4752-9d56-0e2485d4d2a4'
+
+    const user = new User()
+    user.userId = uuid
+    user.username = 'virk'
+    await user.save()
+
+    const newUuid = '4da96a33-57a0-4752-9d56-0e2485d4d2a1'
+    user.userId = newUuid
+
+    await user.save()
+    const users = await User.all()
+    assert.lengthOf(users, 1)
+    assert.equal(users[0].userId.toLowerCase(), newUuid)
+  })
 })
 
 test.group('Self assign primary key', () => {

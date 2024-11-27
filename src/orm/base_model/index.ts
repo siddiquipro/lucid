@@ -2106,10 +2106,8 @@ class BaseModelImpl implements LucidRow {
     client: QueryClientContract
   ): any {
     const modelConstructor = this.constructor as typeof BaseModel
-    const primaryKeyColumn = modelConstructor.$keys.attributesToColumns.get(
-      modelConstructor.primaryKey,
-      modelConstructor.primaryKey
-    )
+    const primaryKey = modelConstructor.primaryKey
+    const primaryKeyColumn = modelConstructor.$keys.attributesToColumns.get(primaryKey, primaryKey)
 
     /**
      * Returning insert query for the inserts
@@ -2126,7 +2124,7 @@ class BaseModelImpl implements LucidRow {
      * updating primary key itself
      */
     const primaryKeyValue = modelConstructor.selfAssignPrimaryKey
-      ? this.$original[primaryKeyColumn]
+      ? this.$original[primaryKey]
       : this.$primaryKeyValue
 
     /**
