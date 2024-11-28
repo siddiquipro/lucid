@@ -57,7 +57,10 @@ test.group('Model | ManyToMany | Options', (group) => {
       User.boot()
       User.$getRelation('skills')!.boot()
     } catch ({ message }) {
-      assert.equal(message, '"User.skills" expects "id" to exist on "User" model, but is missing')
+      assert.equal(
+        message,
+        'Relation "User.skills" expects "id" to exist on "User" model, but is missing. Did you forget to define the column?'
+      )
     }
   })
 
@@ -141,7 +144,10 @@ test.group('Model | ManyToMany | Options', (group) => {
       User.boot()
       User.$getRelation('skills')!.boot()
     } catch ({ message }) {
-      assert.equal(message, '"User.skills" expects "id" to exist on "Skill" model, but is missing')
+      assert.equal(
+        message,
+        'Relation "User.skills" expects "id" to exist on "Skill" model, but is missing. Did you forget to define the column?'
+      )
     }
   })
 

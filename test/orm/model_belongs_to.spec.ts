@@ -53,7 +53,10 @@ test.group('Model | BelongsTo | Options', (group) => {
       Profile.boot()
       Profile.$getRelation('user')!.boot()
     } catch ({ message }) {
-      assert.equal(message, '"Profile.user" expects "id" to exist on "User" model, but is missing')
+      assert.equal(
+        message,
+        'Relation "Profile.user" expects "id" to exist on "User" model, but is missing. Did you forget to define the column?'
+      )
     }
   })
 
@@ -84,7 +87,7 @@ test.group('Model | BelongsTo | Options', (group) => {
     } catch ({ message }) {
       assert.equal(
         message,
-        '"Profile.user" expects "userId" to exist on "Profile" model, but is missing'
+        'Relation "Profile.user" expects "userId" to exist on "Profile" model, but is missing. Did you forget to define the column?'
       )
     }
   })

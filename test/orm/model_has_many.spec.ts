@@ -55,7 +55,10 @@ test.group('Model | HasMany | Options', (group) => {
       User.boot()
       User.$getRelation('posts')!.boot()
     } catch ({ message }) {
-      assert.equal(message, '"User.posts" expects "id" to exist on "User" model, but is missing')
+      assert.equal(
+        message,
+        'Relation "User.posts" expects "id" to exist on "User" model, but is missing. Did you forget to define the column?'
+      )
     }
   })
 
@@ -85,7 +88,7 @@ test.group('Model | HasMany | Options', (group) => {
     } catch ({ message }) {
       assert.equal(
         message,
-        '"User.posts" expects "userId" to exist on "Post" model, but is missing'
+        'Relation "User.posts" expects "userId" to exist on "Post" model, but is missing. Did you forget to define the column?'
       )
     }
   })
