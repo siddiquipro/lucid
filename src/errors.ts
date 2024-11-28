@@ -22,7 +22,7 @@ export const E_UNMANAGED_DB_CONNECTION = createError<[string]>(
 )
 
 export const E_MISSING_MODEL_ATTRIBUTE = createError<[string, string, string]>(
-  '"%s" expects "%s" to exist on "%s" model, but is missing',
+  'Relation "%s" expects "%s" to exist on "%s" model, but is missing. Did you forget to define the column?',
   'E_MISSING_MODEL_ATTRIBUTE',
   500
 )
