@@ -25,113 +25,122 @@ export const messages = {
  * VineJS.
  */
 export function defineValidationRules(db: Database) {
-  const uniqueRule = vine.createRule<VineDbSearchCallback | VineDbSearchOptions>(
-    async (value, callbackOrOptions, field) => {
-      if (!field.isValid) {
-        return
-      }
+  function uniqueRule<ValueType>() {
+    return vine.createRule<VineDbSearchCallback<ValueType> | VineDbSearchOptions<ValueType>>(
+      async (value, callbackOrOptions, field) => {
+        if (!field.isValid) {
+          return
+        }
 
-      /**
-       * Rely on the callback to execute the query and return value
-       * a boolean.
-       *
-       * True means value is unique
-       * False means value is not unique
-       */
-      if (typeof callbackOrOptions === 'function') {
-        const isUnique = await callbackOrOptions(db, value as string, field)
-        if (!isUnique) {
+        /**
+         * Rely on the callback to execute the query and return value
+         * a boolean.
+         *
+         * True means value is unique
+         * False means value is not unique
+         */
+        if (typeof callbackOrOptions === 'function') {
+          const isUnique = await callbackOrOptions(db, value as ValueType, field)
+          if (!isUnique) {
+            field.report(messages['database.unique'], 'database.unique', field)
+          }
+          return
+        }
+
+        const { table, column, filter, connection, caseInsensitive } = callbackOrOptions
+        const query = db.connection(connection).from(table).select(column)
+
+        /**
+         * Apply where clause respecting the caseInsensitive flag.
+         */
+        if (caseInsensitive) {
+          query.whereRaw(`lower(${column}) = ?`, [db.raw(`lower(?)`, [value])])
+        } else {
+          query.where(column, value as string | number)
+        }
+
+        /**
+         * Apply user filter
+         */
+        await filter?.(query, value as ValueType, field)
+
+        /**
+         * Fetch the first row from the database
+         */
+        const row = await query.first()
+        if (row) {
           field.report(messages['database.unique'], 'database.unique', field)
         }
-        return
       }
+    )
+  }
 
-      const { table, column, filter, connection, caseInsensitive } = callbackOrOptions
-      const query = db.connection(connection).from(table).select(column)
+  function existsRule<ValueType>() {
+    return vine.createRule<VineDbSearchCallback<ValueType> | VineDbSearchOptions<ValueType>>(
+      async (value, callbackOrOptions, field) => {
+        if (!field.isValid) {
+          return
+        }
 
-      /**
-       * Apply where clause respecting the caseInsensitive flag.
-       */
-      if (caseInsensitive) {
-        query.whereRaw(`lower(${column}) = ?`, [db.raw(`lower(?)`, [value])])
-      } else {
-        query.where(column, value as string)
-      }
+        /**
+         * Rely on the callback to execute the query and return value
+         * a boolean.
+         *
+         * True means value exists
+         * False means value does not exist
+         */
+        if (typeof callbackOrOptions === 'function') {
+          const exists = await callbackOrOptions(db, value as ValueType, field)
+          if (!exists) {
+            field.report(messages['database.exists'], 'database.exists', field)
+          }
+          return
+        }
 
-      /**
-       * Apply user filter
-       */
-      await filter?.(query, value as string, field)
+        const { table, column, filter, connection, caseInsensitive } = callbackOrOptions
+        const query = db.connection(connection).from(table).select(column)
 
-      /**
-       * Fetch the first row from the database
-       */
-      const row = await query.first()
-      if (row) {
-        field.report(messages['database.unique'], 'database.unique', field)
-      }
-    }
-  )
+        /**
+         * Apply where clause respecting the caseInsensitive flag.
+         */
+        if (caseInsensitive) {
+          query.whereRaw(`lower(${column}) = ?`, [db.raw(`lower(?)`, [value])])
+        } else {
+          query.where(column, value as string | number)
+        }
 
-  const existsRule = vine.createRule<VineDbSearchCallback | VineDbSearchOptions>(
-    async (value, callbackOrOptions, field) => {
-      if (!field.isValid) {
-        return
-      }
+        /**
+         * Apply user filter
+         */
+        await filter?.(query, value as ValueType, field)
 
-      /**
-       * Rely on the callback to execute the query and return value
-       * a boolean.
-       *
-       * True means value exists
-       * False means value does not exist
-       */
-      if (typeof callbackOrOptions === 'function') {
-        const exists = await callbackOrOptions(db, value as string, field)
-        if (!exists) {
+        /**
+         * Fetch the first row from the database
+         */
+        const row = await query.first()
+        if (!row) {
           field.report(messages['database.exists'], 'database.exists', field)
         }
-        return
       }
+    )
+  }
 
-      const { table, column, filter, connection, caseInsensitive } = callbackOrOptions
-      const query = db.connection(connection).from(table).select(column)
-
-      /**
-       * Apply where clause respecting the caseInsensitive flag.
-       */
-      if (caseInsensitive) {
-        query.whereRaw(`lower(${column}) = ?`, [db.raw(`lower(?)`, [value])])
-      } else {
-        query.where(column, value as string)
-      }
-
-      /**
-       * Apply user filter
-       */
-      await filter?.(query, value as string, field)
-
-      /**
-       * Fetch the first row from the database
-       */
-      const row = await query.first()
-      if (!row) {
-        field.report(messages['database.exists'], 'database.exists', field)
-      }
-    }
-  )
+  const uniqueRuleForString = uniqueRule<string>()
+  const uniqueRuleForNumber = uniqueRule<number>()
+  const existsRuleForString = existsRule<string>()
+  const existsRuleForNumber = existsRule<number>()
 
   VineString.macro('unique', function (this: VineString, callbackOrOptions) {
-    return this.use(uniqueRule(callbackOrOptions))
+    return this.use(uniqueRuleForString(callbackOrOptions))
   })
   VineString.macro('exists', function (this: VineString, callbackOrOptions) {
-    return this.use(existsRule(callbackOrOptions))
+    return this.use(existsRuleForString(callbackOrOptions))
   })
 
   VineNumber.macro('unique', function (this: VineNumber, callbackOrOptions) {
-    return this.use(uniqueRule(callbackOrOptions))
+    return this.use(uniqueRuleForNumber(callbackOrOptions))
   })
   VineNumber.macro('exists', function (this: VineNumber, callbackOrOptions) {
-    return this.use(existsRule(callbackOrOptions))
+    return this.use(existsRuleForNumber(callbackOrOptions))
   })
 }

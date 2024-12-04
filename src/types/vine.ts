@@ -14,7 +14,7 @@ import type { DatabaseQueryBuilderContract } from './querybuilder.js'
 /**
  * Options for the unique and the exists validations
  */
-export type VineDbSearchOptions = {
+export type VineDbSearchOptions<ValueType> = {
   /**
    * Database table for the query
    */
@@ -49,7 +49,7 @@ export type VineDbSearchOptions = {
    */
   filter?: (
     db: DatabaseQueryBuilderContract,
-    value: string,
+    value: ValueType,
     field: FieldContext
   ) => void | Promise<void>
 }

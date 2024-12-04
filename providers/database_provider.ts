@@ -44,7 +44,7 @@ declare module '@vinejs/vine' {
      * Ensure the value is unique inside the database by table and column name.
      * Optionally, you can define a filter to narrow down the query.
      */
-    unique(options: VineDbSearchOptions): this
+    unique(options: VineDbSearchOptions<ValueType>): this
 
     /**
      * Ensure the value is unique inside the database by self
@@ -59,7 +59,7 @@ declare module '@vinejs/vine' {
      * Ensure the value exists inside the database by table and column name.
      * Optionally, you can define a filter to narrow down the query.
      */
-    exists(options: VineDbSearchOptions): this
+    exists(options: VineDbSearchOptions<ValueType>): this
 
     /**
      * Ensure the value exists inside the database by self

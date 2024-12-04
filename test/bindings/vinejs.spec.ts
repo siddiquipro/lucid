@@ -14,6 +14,9 @@ import { defineValidationRules } from '../../src/bindings/vinejs.js'
 import { getConfig, setup, cleanup, logger, createEmitter } from '../../test-helpers/index.js'
 
 let db: Database
+const dialectPerformsCaseSensitiveSearch = ['mysql', 'mysql_legacy', 'mssql'].includes(
+  process.env.DB!
+)
 
 test.group('VineJS | unique', (group) => {
   group.setup(async () => {
@@ -102,13 +105,23 @@ test.group('VineJS | unique', (group) => {
         email: 'foo@bar.com',
       })
     } catch (error) {
-      assert.deepEqual(error.messages, [
-        {
-          field: 'email',
-          message: 'The email has already been taken',
-          rule: 'database.unique',
-        },
-      ])
+      if (dialectPerformsCaseSensitiveSearch) {
+        assert.deepEqual(error.messages, [
+          {
+            field: 'email',
+            message: 'The email has already been taken',
+            rule: 'database.unique',
+          },
+        ])
+      } else {
+        assert.deepEqual(error.messages, [
+          {
+            field: 'email',
+            message: 'The email has already been taken',
+            rule: 'database.unique',
+          },
+        ])
+      }
     }
   })
 
@@ -338,13 +351,23 @@ test.group('VineJS | exists', (group) => {
         email: 'foo@bar.com',
       })
     } catch (error) {
-      assert.deepEqual(error.messages, [
-        {
-          field: 'username',
-          message: 'The selected username is invalid',
-          rule: 'database.exists',
-        },
-      ])
+      if (dialectPerformsCaseSensitiveSearch) {
+        assert.deepEqual(error.messages, [
+          {
+            field: 'email',
+            message: 'The email has already been taken',
+            rule: 'database.unique',
+          },
+        ])
+      } else {
+        assert.deepEqual(error.messages, [
+          {
+            field: 'username',
+            message: 'The selected username is invalid',
+            rule: 'database.exists',
+          },
+        ])
+      }
     }
   })
 
