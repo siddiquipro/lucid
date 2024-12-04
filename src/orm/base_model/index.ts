@@ -11,7 +11,11 @@ import { DateTime } from 'luxon'
 import Hooks from '@poppinss/hooks'
 import lodash from '@poppinss/utils/lodash'
 import { Exception, defineStaticProperty } from '@poppinss/utils'
-import { QueryClientContract, TransactionClientContract } from '../../types/database.js'
+import {
+  IsolationLevels,
+  QueryClientContract,
+  TransactionClientContract,
+} from '../../types/database.js'
 
 import {
   LucidRow,
@@ -239,6 +243,20 @@ class BaseModelImpl implements LucidRow {
    */
   static query(options?: ModelAdapterOptions): any {
     return this.$adapter.query(this, options)
+  }
+
+  /**
+   * Returns the model query instance for the given model
+   */
+  static async transaction(
+    options?: ModelAdapterOptions & { isolationLevel?: IsolationLevels }
+  ): Promise<TransactionClientContract> {
+    const client = this.$adapter.modelConstructorClient(this, options)
+    if (client.isTransaction) {
+      return client as TransactionClientContract
+    }
+
+    return client.transaction()
   }
 
   /**

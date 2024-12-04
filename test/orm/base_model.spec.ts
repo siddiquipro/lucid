@@ -8277,3 +8277,44 @@ test.group('Base Model | lockForUpdate', (group) => {
     )
   })
 })
+
+test.group('Base Model | transaction', (group) => {
+  group.setup(async () => {
+    await setup()
+  })
+
+  group.teardown(async () => {
+    await cleanupTables()
+  })
+
+  group.each.teardown(async () => {
+    await resetTables()
+  })
+
+  test('create transaction client using model', async ({ fs, assert }) => {
+    const app = new AppFactory().create(fs.baseUrl, () => {})
+    await app.init()
+    const db = getDb()
+    const adapter = ormAdapter(db)
+
+    const BaseModel = getBaseModel(adapter)
+
+    class User extends BaseModel {
+      @column({ isPrimary: true })
+      declare id: number
+
+      @column()
+      declare username: string
+
+      @column()
+      declare email: string
+    }
+
+    const client = await User.transaction()
+    await client.insertQuery().table('users').insert({ username: 'virk' })
+    await client.rollback()
+    const user = await User.find(1)
+
+    assert.isNull(user)
+  })
+})

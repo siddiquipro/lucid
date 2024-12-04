@@ -9,7 +9,12 @@
 
 import { DateTime } from 'luxon'
 import type Hooks from '@poppinss/hooks'
-import { DialectContract, QueryClientContract, TransactionClientContract } from './database.js'
+import {
+  DialectContract,
+  IsolationLevels,
+  QueryClientContract,
+  TransactionClientContract,
+} from './database.js'
 
 import {
   Update,
@@ -1142,6 +1147,14 @@ export interface LucidModel {
     this: Model,
     options?: ModelAdapterOptions
   ): ModelQueryBuilderContract<Model, Result>
+
+  /**
+   * Returns transaction client from the model. It is same as
+   * calling "db.transaction"
+   */
+  transaction(
+    options?: ModelAdapterOptions & { isolationLevel?: IsolationLevels }
+  ): Promise<TransactionClientContract>
 
   /**
    * Truncate model table
