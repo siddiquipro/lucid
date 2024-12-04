@@ -108,6 +108,11 @@ test.group('VineJS | unique', (group) => {
       if (dialectPerformsCaseSensitiveSearch) {
         assert.deepEqual(error.messages, [
           {
+            field: 'username',
+            message: 'The username has already been taken',
+            rule: 'database.unique',
+          },
+          {
             field: 'email',
             message: 'The email has already been taken',
             rule: 'database.unique',
@@ -337,29 +342,32 @@ test.group('VineJS | exists', (group) => {
       })
     )
 
-    try {
-      await validator.validate({
-        /**
-         * Username validation will fail because of case
-         * mismatch
-         */
-        username: 'foo',
-        /**
-         * Email validation will pass regardless of the
-         * case mismatch
-         */
-        email: 'foo@bar.com',
-      })
-    } catch (error) {
-      if (dialectPerformsCaseSensitiveSearch) {
-        assert.deepEqual(error.messages, [
-          {
-            field: 'email',
-            message: 'The email has already been taken',
-            rule: 'database.unique',
-          },
-        ])
-      } else {
+    if (dialectPerformsCaseSensitiveSearch) {
+      assert.deepEqual(
+        await validator.validate({
+          username: 'foo',
+          email: 'foo@bar.com',
+        }),
+        {
+          username: 'foo',
+          email: 'foo@bar.com',
+        }
+      )
+    } else {
+      try {
+        await validator.validate({
+          /**
+           * Username validation will fail because of case
+           * mismatch
+           */
+          username: 'foo',
+          /**
+           * Email validation will pass regardless of the
+           * case mismatch
+           */
+          email: 'foo@bar.com',
+        })
+      } catch (error) {
         assert.deepEqual(error.messages, [
           {
             field: 'username',
