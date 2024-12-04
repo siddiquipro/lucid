@@ -7,80 +7,131 @@
  * file that was distributed with this source code.
  */
 
-import vine, { VineNumber, VineString } from '@vinejs/vine'
 import type { Database } from '../database/main.js'
-import type { FieldContext } from '@vinejs/vine/types'
-import { DatabaseQueryBuilderContract } from '../types/querybuilder.js'
+import vine, { VineNumber, VineString } from '@vinejs/vine'
+import { VineDbSearchCallback, VineDbSearchOptions } from '../types/vine.js'
+
+/**
+ * Default validation messages used by the unique and the
+ * exists rules
+ */
+export const messages = {
+  'database.unique': 'The {{ field }} has already been taken',
+  'database.exists': 'The selected {{ field }} is invalid',
+}
 
 /**
  * Defines the "unique" and "exists" validation rules with
  * VineJS.
  */
 export function defineValidationRules(db: Database) {
-  const uniqueRule = vine.createRule<
-    | ((db: Database, value: string, field: FieldContext) => Promise<boolean>)
-    | {
-        table: string
-        column?: string
-        filter?: (
-          db: DatabaseQueryBuilderContract,
-          value: unknown,
-          field: FieldContext
-        ) => Promise<void>
-      }
-  >(async (value, checkerOrOptions, field) => {
-    if (!field.isValid) {
-      return
-    }
-
-    if (typeof checkerOrOptions === 'function') {
-      const isUnique = await checkerOrOptions(db, value as string, field)
-      if (!isUnique) {
-        field.report('The {{ field }} has already been taken', 'database.unique', field)
-      }
-      return
-    }
-
-    if (typeof value !== 'string') {
-      return
-    }
-
-    if (typeof field.name !== 'string') {
-      return
-    }
-
-    const { table, column = field.name, filter } = checkerOrOptions
-    const baseQuery = db.from(table).select(column).where(column, value)
-    await filter?.(baseQuery, value, field)
-    const row = await baseQuery.first()
-    if (row) {
-      field.report('The {{ field }} has already been taken', 'database.unique', field)
-    }
-  })
-
-  const existsRule = vine.createRule<Parameters<VineString['exists'] | VineNumber['exists']>[0]>(
-    async (value, checker, field) => {
+  const uniqueRule = vine.createRule<VineDbSearchCallback | VineDbSearchOptions>(
+    async (value, callbackOrOptions, field) => {
       if (!field.isValid) {
         return
       }
 
-      const exists = await checker(db, value as string, field)
-      if (!exists) {
-        field.report('The selected {{ field }} is invalid', 'database.exists', field)
+      /**
+       * Rely on the callback to execute the query and return value
+       * a boolean.
+       *
+       * True means value is unique
+       * False means value is not unique
+       */
+      if (typeof callbackOrOptions === 'function') {
+        const isUnique = await callbackOrOptions(db, value as string, field)
+        if (!isUnique) {
+          field.report(messages['database.unique'], 'database.unique', field)
+        }
+        return
+      }
+
+      const { table, column, filter, connection, caseInsensitive } = callbackOrOptions
+      const query = db.connection(connection).from(table).select(column)
+
+      /**
+       * Apply where clause respecting the caseInsensitive flag.
+       */
+      if (caseInsensitive) {
+        query.whereRaw(`lower(${column}) = ?`, [db.raw(`lower(?)`, [value])])
+      } else {
+        query.where(column, value as string)
+      }
+
+      /**
+       * Apply user filter
+       */
+      await filter?.(query, value as string, field)
+
+      /**
+       * Fetch the first row from the database
+       */
+      const row = await query.first()
+      if (row) {
+        field.report(messages['database.unique'], 'database.unique', field)
       }
     }
   )
 
-  VineString.macro('unique', function (this: VineString, checkerOrOptions) {
-    return this.use(uniqueRule(checkerOrOptions))
+  const existsRule = vine.createRule<VineDbSearchCallback | VineDbSearchOptions>(
+    async (value, callbackOrOptions, field) => {
+      if (!field.isValid) {
+        return
+      }
+
+      /**
+       * Rely on the callback to execute the query and return value
+       * a boolean.
+       *
+       * True means value exists
+       * False means value does not exist
+       */
+      if (typeof callbackOrOptions === 'function') {
+        const exists = await callbackOrOptions(db, value as string, field)
+        if (!exists) {
+          field.report(messages['database.exists'], 'database.exists', field)
+        }
+        return
+      }
+
+      const { table, column, filter, connection, caseInsensitive } = callbackOrOptions
+      const query = db.connection(connection).from(table).select(column)
+
+      /**
+       * Apply where clause respecting the caseInsensitive flag.
+       */
+      if (caseInsensitive) {
+        query.whereRaw(`lower(${column}) = ?`, [db.raw(`lower(?)`, [value])])
+      } else {
+        query.where(column, value as string)
+      }
+
+      /**
+       * Apply user filter
+       */
+      await filter?.(query, value as string, field)
+
+      /**
+       * Fetch the first row from the database
+       */
+      const row = await query.first()
+      if (!row) {
+        field.report(messages['database.exists'], 'database.exists', field)
+      }
+    }
+  )
+
+  VineString.macro('unique', function (this: VineString, callbackOrOptions) {
+    return this.use(uniqueRule(callbackOrOptions))
   })
-  VineString.macro('exists', function (this: VineString, checker) {
-    return this.use(existsRule(checker))
+  VineString.macro('exists', function (this: VineString, callbackOrOptions) {
+    return this.use(existsRule(callbackOrOptions))
   })
-  VineNumber.macro('unique', function (this: VineNumber, checkerOrOptions) {
-    return this.use(uniqueRule(checkerOrOptions))
+
+  VineNumber.macro('unique', function (this: VineNumber, callbackOrOptions) {
+    return this.use(uniqueRule(callbackOrOptions))
   })
-  VineNumber.macro('exists', function (this: VineNumber, checker) {
-    return this.use(existsRule(checker))
+  VineNumber.macro('exists', function (this: VineNumber, callbackOrOptions) {
+    return this.use(existsRule(callbackOrOptions))
   })
 }

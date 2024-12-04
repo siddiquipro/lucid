@@ -1,13 +1,12 @@
 /*
  * @adonisjs/lucid
  *
- * (c) Harminder Virk <virk@adonisjs.com>
+ * (c) AdonisJS
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-import type { FieldContext } from '@vinejs/vine/types'
 import type { ApplicationService } from '@adonisjs/core/types'
 
 import { Database } from '../src/database/main.js'
@@ -16,7 +15,7 @@ import { QueryClient } from '../src/query_client/index.js'
 import { BaseModel } from '../src/orm/base_model/index.js'
 import { DatabaseTestUtils } from '../src/test_utils/database.js'
 import type { DatabaseConfig, DbQueryEventNode } from '../src/types/database.js'
-import { DatabaseQueryBuilderContract } from '../src/types/querybuilder.js'
+import { VineDbSearchCallback, VineDbSearchOptions } from '../src/types/vine.js'
 
 /**
  * Extending AdonisJS types
@@ -40,7 +39,13 @@ declare module '@adonisjs/core/test_utils' {
  * Extending VineJS schema types
  */
 declare module '@vinejs/vine' {
-  interface VineLucidBindings {
+  interface VineLucidBindings<ValueType> {
+    /**
+     * Ensure the value is unique inside the database by table and column name.
+     * Optionally, you can define a filter to narrow down the query.
+     */
+    unique(options: VineDbSearchOptions): this
+
     /**
      * Ensure the value is unique inside the database by self
      * executing a query.
@@ -48,35 +53,26 @@ declare module '@vinejs/vine' {
      * - The callback must return "true", if the value is unique (does not exist).
      * - The callback must return "false", if the value is not unique (already exists).
      */
-    unique(callback: (db: Database, value: string, field: FieldContext) => Promise<boolean>): this
+    unique(callback: VineDbSearchCallback<ValueType>): this
 
     /**
-     * Ensure the value is unique inside the database by table and column name.
+     * Ensure the value exists inside the database by table and column name.
      * Optionally, you can define a filter to narrow down the query.
      */
-    unique(options: {
-      table: string
-      column?: string
-      filter?: (
-        db: DatabaseQueryBuilderContract,
-        value: unknown,
-        field: FieldContext
-      ) => Promise<void>
-    }): this
+    exists(options: VineDbSearchOptions): this
 
     /**
-     * Ensure the value is exists inside the database by self
+     * Ensure the value exists inside the database by self
      * executing a query.
      *
      * - The callback must return "false", if the value exists.
      * - The callback must return "true", if the value does not exist.
      */
-    exists(callback: (db: Database, value: string, field: FieldContext) => Promise<boolean>): this
+    exists(callback: VineDbSearchCallback<ValueType>): this
   }
 
-  interface VineNumber extends VineLucidBindings {}
-
-  interface VineString extends VineLucidBindings {}
+  interface VineNumber extends VineLucidBindings<number> {}
+  interface VineString extends VineLucidBindings<string> {}
 }
 
 /**
