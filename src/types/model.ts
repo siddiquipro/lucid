@@ -618,6 +618,8 @@ export interface LucidRow {
   fill(value: Partial<ModelAttributes<this>>, allowExtraProperties?: boolean): this
   merge(value: Partial<ModelAttributes<this>>, allowExtraProperties?: boolean): this
 
+  isDirty(fields?: keyof ModelAttributes<this> | (keyof ModelAttributes<this>)[]): boolean
+
   /**
    * Enable force update even when no attributes
    * are dirty
