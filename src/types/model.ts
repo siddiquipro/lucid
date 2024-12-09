@@ -14,6 +14,7 @@ import {
   IsolationLevels,
   QueryClientContract,
   TransactionClientContract,
+  TransactionFn,
 } from './database.js'
 
 import {
@@ -1154,9 +1155,7 @@ export interface LucidModel {
    * Returns transaction client from the model. It is same as
    * calling "db.transaction"
    */
-  transaction(
-    options?: ModelAdapterOptions & { isolationLevel?: IsolationLevels }
-  ): Promise<TransactionClientContract>
+  transaction: TransactionFn
 
   /**
    * Truncate model table

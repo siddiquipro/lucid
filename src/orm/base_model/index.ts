@@ -248,15 +248,28 @@ class BaseModelImpl implements LucidRow {
   /**
    * Returns the model query instance for the given model
    */
-  static async transaction(
+  static transaction<T>(
+    callback: (trx: TransactionClientContract) => Promise<T>,
     options?: ModelAdapterOptions & { isolationLevel?: IsolationLevels }
-  ): Promise<TransactionClientContract> {
-    const client = this.$adapter.modelConstructorClient(this, options)
-    if (client.isTransaction) {
-      return client as TransactionClientContract
+  ): Promise<T>
+  static transaction(
+    options?: ModelAdapterOptions & {
+      isolationLevel?: IsolationLevels
+    }
+  ): Promise<TransactionClientContract>
+  static async transaction<T>(
+    callbackOrOptions?:
+      | ((trx: TransactionClientContract) => Promise<T>)
+      | (ModelAdapterOptions & { isolationLevel?: IsolationLevels }),
+    options?: ModelAdapterOptions & { isolationLevel?: IsolationLevels }
+  ): Promise<TransactionClientContract | T> {
+    if (typeof callbackOrOptions === 'function') {
+      const client = this.$adapter.modelConstructorClient(this, options)
+      return client.transaction(callbackOrOptions, options)
     }
 
-    return client.transaction()
+    const client = this.$adapter.modelConstructorClient(this, callbackOrOptions)
+    return client.transaction(callbackOrOptions)
   }
 
   /**
