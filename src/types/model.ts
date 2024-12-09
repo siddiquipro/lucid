@@ -10,11 +10,10 @@
 import { DateTime } from 'luxon'
 import type Hooks from '@poppinss/hooks'
 import {
+  TransactionFn,
   DialectContract,
-  IsolationLevels,
   QueryClientContract,
   TransactionClientContract,
-  TransactionFn,
 } from './database.js'
 
 import {

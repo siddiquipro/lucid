@@ -8366,10 +8366,10 @@ test.group('Base Model | transaction', (group) => {
       declare email: string
     }
 
-    const [userId] = await User.transaction(async (trx) => {
+    await User.transaction(async (trx) => {
       return trx.insertQuery().table('users').insert({ username: 'virk' }).returning('id')
     })
-    const user = await User.find(userId)
+    const user = await User.find(1)
     assert.equal(user!.username, 'virk')
   })
 })
