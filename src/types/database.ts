@@ -411,10 +411,18 @@ type MysqlConnectionNode = {
   flags?: string
   ssl?: any
 }
+
+/**
+ * mysql2 options for compatibility to mysql
+ */
+type Mysql2AdditionalOptions = {
+  decimalNumbers?: boolean
+}
+
 export type MysqlConfig = SharedConfigNode & {
   client: 'mysql' | 'mysql2'
   version?: string
-  connection?: SharedConnectionNode & MysqlConnectionNode
+  connection?: SharedConnectionNode & MysqlConnectionNode & Mysql2AdditionalOptions
   replicas?: {
     write: {
       connection: MysqlConfig['connection']
